@@ -87,8 +87,6 @@ MPU6050 mpu;
    http://code.google.com/p/arduino/issues/detail?id=958
  * ========================================================================= */
 
-
-
 // uncomment "OUTPUT_READABLE_QUATERNION" if you want to see the actual
 // quaternion components in a [w, x, y, z] format (not best for parsing
 // on a remote host such as Processing or something though)
@@ -118,7 +116,7 @@ MPU6050 mpu;
 // components with gravity removed and adjusted for the world frame of
 // reference (yaw is relative to initial orientation, since no magnetometer
 // is present in this case). Could be quite handy in some cases.
-//#define OUTPUT_READABLE_WORLDACCEL
+#define OUTPUT_READABLE_WORLDACCEL
 
 // uncomment "OUTPUT_TEAPOT" if you want output that matches the
 // format used for the InvenSense teapot demo
@@ -126,11 +124,12 @@ MPU6050 mpu;
 
 
 const int chipSelect = 4;
+
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
 bool blinkState = false;
 
 
-// for calculating the time since when the arduino started 
+// for calculating the time since the arduino started 
  double timing;
  double timing1;
 // MPU control/status vars
@@ -153,13 +152,6 @@ boolean start=0;        // used for the first attempt to calculate elapsed time
 // packet structure for InvenSense teapot demo
 uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
   
-///////////////////////////////////////  RC Transmitter //////////////////////////////////////
-
-int pin1 = 7;
-int pin2 = 8;
-int pin3 = 9;
-int pin4 = 10;
-unsigned long duration1, duration2, duration3, duration4;
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -178,10 +170,6 @@ void dmpDataReady() {
 
 void setup() {
 
-     pinMode(pin1, INPUT);
-     pinMode(pin2, INPUT);
-     pinMode(pin3, INPUT);
-     pinMode(pin4, INPUT);
     // join I2C bus (I2Cdev library doesn't do this automatically)
     #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
         Wire.begin();
@@ -193,8 +181,10 @@ void setup() {
     // initialize serial communication
     // (115200 chosen because it is required for Teapot Demo output, but it's
     // really up to you depending on your project)
-    Serial.begin(115200);
-    while (!Serial); // wait for Leonardo enumeration, others continue immediately
+    Serial.begin(38400); 
+    
+    // only while usb connected
+    // while (!Serial); // wait for Leonardo enumeration, others continue immediately
 
     // NOTE: 8MHz or slower host processors, like the Teensy @ 3.3v or Ardunio
     // Pro Mini running at 3.3v, cannot handle this baud rate reliably due to
@@ -211,15 +201,14 @@ void setup() {
     Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
 
     // wait for ready
-    Serial.println(F("\nSend any character to begin DMP programming and demo: "));
-    while (Serial.available() && Serial.read()); // empty buffer
-    while (!Serial.available());                 // wait for data
-    while (Serial.available() && Serial.read()); // empty buffer again
+    //Serial.println(F("\nSend any character to begin DMP programming and demo: "));
+    //while (Serial.available() && Serial.read()); // empty buffer
+    //while (!Serial.available());                 // wait for data
+    //while (Serial.available() && Serial.read()); // empty buffer again
 
     // load and configure the DMP
     Serial.println(F("Initializing DMP..."));
     devStatus = mpu.dmpInitialize();
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     Serial.print("Initializing SD card...");
 
   // see if the card is present and can be initialized:
@@ -277,13 +266,17 @@ double timing_sec;
 
 void loop() {
 
-      ///////////////////////////////////////// RC Transmitter Values//////////////////////////////
-
-  
+ // TODO timing with millis()   
+          if (start == 0)
+          { timing1=timing;
+            start=1;  
+          }
+          timing=timing-timing1;
+          timing_sec = timing/1000;
+          Serial.println(timing_sec);
+          if((timing_sec)/5.0 == 0.0)  complete=1;
+          if((timing_sec)/5.0 == 0.0 && (timing_sec)/10.0 == 0.0)  complete=0; 
       
-  
-
-  
     // if programming failed, don't try to do anything
     if (!dmpReady) return;
 
@@ -323,15 +316,7 @@ void loop() {
         // track FIFO count here in case there is > 1 packet available
         // (this lets us immediately read more without waiting for an interrupt)
         fifoCount -= packetSize;
-
-     
-
-      
-      
-      
-      
-      
-      
+         
        #ifdef OUTPUT_READABLE_QUATERNION
             // display quaternion values in easy matrix form: w x y z
             mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -358,15 +343,7 @@ void loop() {
         #endif
 
         #ifdef OUTPUT_READABLE_YAWPITCHROLL
-            // display Euler angles in degrees
-
-         //   if (complete==0)
-         //   myservo.write(20);
-            
-         //   if (complete==1)
-         //   myservo.write(90);
-
-            
+            // display Euler angles in degrees            
             mpu.dmpGetQuaternion(&q, fifoBuffer);
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
@@ -378,18 +355,9 @@ void loop() {
             Serial.print("\t");
             Serial.print(ypr[2] * 180/M_PI);
             Serial.print("\t");
-            timing = millis();
-            if (start == 0)
-            { timing1=timing;
-              start=1;  
-            }
-            timing=timing-timing1;
-            timing_sec = timing/1000;
-            Serial.println(timing_sec);
-            if((timing_sec)/5.0 == 0.0)  complete=1;
-            if((timing_sec)/5.0 == 0.0 && (timing_sec)/10.0 == 0.0)  complete=0; 
+            timing = millis(); 
         #endif
-
+      
         #ifdef OUTPUT_READABLE_REALACCEL
             // display real acceleration, adjusted to remove gravity
             mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -438,39 +406,20 @@ void loop() {
         blinkState = !blinkState;
         digitalWrite(LED_PIN, blinkState);
 
-        duration1 = pulseIn(pin1, HIGH);
-        duration2 = pulseIn(pin2, HIGH);
-        duration3 = pulseIn(pin3, HIGH);
-        duration4 = pulseIn(pin4, HIGH);
-  
-              Serial.print("R-P-T-Y");
-              Serial.print("\t \t");
-              Serial.print(duration1);
-              Serial.print("\t");
-              Serial.print(duration2);
-              Serial.print("\t");
-              Serial.print(duration3);
-              Serial.print("\t");
-              Serial.print(duration4);
-              Serial.print("\t");
-        
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // make a string for assembling the data to log:
   String dataString = "";
 
-  // read three sensors and append to the string:
-  for (int count = 0; count < 3; count++) {
-    //int sensor = analogRead(analogPin);
-    dataString += String(ypr[count]);
-    if (count < 3) {
-      dataString += " ";
-    }
-    
-  }
   
-  
+  #ifdef OUTPUT_READABLE_QUATERNION
+    dataString += String("readable quaternions, ");
+    dataString += String(q.w);dataString += ",";
+    dataString += String(q.x);dataString += ",";
+    dataString += String(q.y);dataString += ",";    
+    dataString += String(q.z);dataString += ",";
+
    dataString += String(timing1/1000);
   
   // open the file. note that only one file can be open at a time,
@@ -488,4 +437,92 @@ void loop() {
     Serial.println("error opening datalog.txt");
   }
 
+  #endif
+
+  #ifdef OUTPUT_READABLE_EULER
+
+
+  #endif
+
+  #ifdef OUTPUT_READABLE_YAWPITCHROL
+    dataString += String("readable yaw pitch roll");dataString += ",";
+    // read three sensors and append to the string:
+    for (int count = 0; count < 3; count++) {
+      //int sensor = analogRead(analogPin);
+      dataString += String(ypr[count]);
+      if (count < 3) {
+        dataString += ",";
+      }
+      
+    }
+
+   dataString += String(timing1/1000);
+  
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+  File dataFile = SD.open("datalog.txt", FILE_WRITE);
+
+  // if the file is available, write to it:
+  if (dataFile) {
+    dataFile.println(dataString);
+    dataFile.close();
+   
+  }
+  // if the file isn't open, pop up an error:
+  else {
+    Serial.println("error opening datalog.txt");
+  }
+  #endif
+
+
+  #ifdef OUTPUT_READABLE_REALACCEL
+    dataString += String("readable real accel");dataString += ",";
+    dataString += String(aaReal.x);dataString += ",";
+    dataString += String(aaReal.y);dataString += ",";    
+    dataString += String(aaReal.z);dataString += ",";
+
+   dataString += String(timing1/1000);
+  
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+  File dataFile = SD.open("datalog.txt", FILE_WRITE);
+
+  // if the file is available, write to it:
+  if (dataFile) {
+    dataFile.println(dataString);
+    dataFile.close();
+   
+  }
+  // if the file isn't open, pop up an error:
+  else {
+    Serial.println("error opening datalog.txt");
+  }
+
+  #endif
+
+  #ifdef OUTPUT_READABLE_WORLDACCEL
+    dataString += String("readable worldaccel");dataString += ",";
+    dataString += String(aaWorld.x);dataString += ",";
+    dataString += String(aaWorld.y);dataString += ",";    
+    dataString += String(aaWorld.z);dataString += ",";
+
+   dataString += String(timing1/1000);
+  
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+  File dataFile = SD.open("datalog.txt", FILE_WRITE);
+
+  // if the file is available, write to it:
+  if (dataFile) {
+    dataFile.println(dataString);
+    dataFile.close();
+   
+  }
+  // if the file isn't open, pop up an error:
+  else {
+    Serial.println("error opening datalog.txt");
+  }
+
+  #endif
+  
 }
