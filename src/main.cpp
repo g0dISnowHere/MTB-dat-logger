@@ -431,7 +431,8 @@ void loop() {
     dataString += String(q.y);dataString += ",";    
     dataString += String(q.z);dataString += ",";
 
-   dataString += String(timing1/1000);
+   currentMillis = millis();dataString += "time";dataString += ",";
+   dataString += String(currentMillis/1000);
   
  
 
@@ -515,6 +516,7 @@ void loop() {
     dataString += String(aaWorld.x);dataString += ",";
     dataString += String(aaWorld.y);dataString += ",";    
     dataString += String(aaWorld.z);dataString += ",";
+
     currentMillis = millis();dataString += "time";dataString += ",";
     dataString += String(currentMillis/1000);
   
@@ -534,5 +536,5 @@ void loop() {
   }
 
   #endif
-  
+  dataFile.close();
 }
