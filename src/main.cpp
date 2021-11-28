@@ -132,6 +132,10 @@ bool blinkState = false;
 // for calculating the time since the arduino started 
  double timing;
  double timing1;
+
+unsigned long startMillis;
+unsigned long currentMillis;
+const unsigned long period = 1000; //the value is a number of milliseconds, ie 1 second
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
 uint8_t mpuIntStatus;   // holds actual interrupt status byte from MPU
@@ -266,7 +270,8 @@ double timing_sec;
 
 void loop() {
 
- // TODO timing with millis()   
+ // TODO timing with millis()  
+  /* 
           if (start == 0)
           { timing1=timing;
             start=1;  
@@ -275,7 +280,9 @@ void loop() {
           timing_sec = timing/1000;
           Serial.println(timing_sec);
           if((timing_sec)/5.0 == 0.0)  complete=1;
-          if((timing_sec)/5.0 == 0.0 && (timing_sec)/10.0 == 0.0)  complete=0; 
+          if((timing_sec)/5.0 == 0.0 && (timing_sec)/10.0 == 0.0)  complete=0;  */
+
+    startMillis = millis();
       
     // if programming failed, don't try to do anything
     if (!dmpReady) return;
@@ -349,13 +356,15 @@ void loop() {
             mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
               
             Serial.print("ypr  time\t");
+            currentMillis = millis();
+            Serial.println(currentMillis);
             Serial.print(ypr[0] * 180/M_PI);
             Serial.print("\t");
             Serial.print(ypr[1] * 180/M_PI);
             Serial.print("\t");
             Serial.print(ypr[2] * 180/M_PI);
             Serial.print("\t");
-            timing = millis(); 
+            //timing = millis(); 
         #endif
       
         #ifdef OUTPUT_READABLE_REALACCEL
@@ -412,7 +421,9 @@ void loop() {
 // make a string for assembling the data to log:
   String dataString = "";
 
-  
+   // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+  File dataFile = SD.open("datalog.txt", FILE_WRITE);
   #ifdef OUTPUT_READABLE_QUATERNION
     dataString += String("readable quaternions, ");
     dataString += String(q.w);dataString += ",";
@@ -422,14 +433,12 @@ void loop() {
 
    dataString += String(timing1/1000);
   
-  // open the file. note that only one file can be open at a time,
-  // so you have to close this one before opening another.
-  File dataFile = SD.open("datalog.txt", FILE_WRITE);
+ 
 
   // if the file is available, write to it:
   if (dataFile) {
     dataFile.println(dataString);
-    dataFile.close();
+  //  dataFile.close();
    
   }
   // if the file isn't open, pop up an error:
@@ -455,17 +464,18 @@ void loop() {
       }
       
     }
-
-   dataString += String(timing1/1000);
+   currentMillis = millis();dataString += "time";dataString += ",";
+   dataString += String(currentMillis/1000);
   
   // open the file. note that only one file can be open at a time,
   // so you have to close this one before opening another.
-  File dataFile = SD.open("datalog.txt", FILE_WRITE);
+ 
+ // File dataFile = SD.open("datalog.txt", FILE_WRITE);
 
   // if the file is available, write to it:
   if (dataFile) {
     dataFile.println(dataString);
-    dataFile.close();
+  //  dataFile.close();
    
   }
   // if the file isn't open, pop up an error:
@@ -505,17 +515,17 @@ void loop() {
     dataString += String(aaWorld.x);dataString += ",";
     dataString += String(aaWorld.y);dataString += ",";    
     dataString += String(aaWorld.z);dataString += ",";
-
-   dataString += String(timing1/1000);
+    currentMillis = millis();dataString += "time";dataString += ",";
+    dataString += String(currentMillis/1000);
   
   // open the file. note that only one file can be open at a time,
   // so you have to close this one before opening another.
-  File dataFile = SD.open("datalog.txt", FILE_WRITE);
+  //File dataFile = SD.open("datalog.txt", FILE_WRITE);
 
   // if the file is available, write to it:
   if (dataFile) {
     dataFile.println(dataString);
-    dataFile.close();
+  //  dataFile.close();
    
   }
   // if the file isn't open, pop up an error:
