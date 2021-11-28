@@ -425,7 +425,7 @@ void loop() {
   // so you have to close this one before opening another.
   File dataFile = SD.open("datalog.txt", FILE_WRITE);
   #ifdef OUTPUT_READABLE_QUATERNION
-    dataString += String("readable quaternions, ");
+    dataString = String("readable quaternions, ");
     dataString += String(q.w);dataString += ",";
     dataString += String(q.x);dataString += ",";
     dataString += String(q.y);dataString += ",";    
@@ -455,7 +455,7 @@ void loop() {
   #endif
 
   #ifdef OUTPUT_READABLE_YAWPITCHROL
-    dataString += String("readable yaw pitch roll");dataString += ",";
+    dataString = String("readable yaw pitch roll");dataString += ",";
     // read three sensors and append to the string:
     for (int count = 0; count < 3; count++) {
       //int sensor = analogRead(analogPin);
@@ -512,7 +512,7 @@ void loop() {
   #endif
 
   #ifdef OUTPUT_READABLE_WORLDACCEL
-    dataString += String("readable worldaccel");dataString += ",";
+    dataString = String("readable worldaccel");dataString += ",";
     dataString += String(aaWorld.x);dataString += ",";
     dataString += String(aaWorld.y);dataString += ",";    
     dataString += String(aaWorld.z);dataString += ",";
